@@ -1,4 +1,4 @@
-package assets
+package cmd
 
 type Assets struct {
 	Objects []*Object `json:"objects"`
