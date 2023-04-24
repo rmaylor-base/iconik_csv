@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"reflect"
+	"strconv"
 )
 
 type CMDArgs struct {
@@ -20,15 +23,62 @@ type CMDArgs struct {
 var args CMDArgs
 
 func Execute() error {
-	argParse()
-	a, err := getAssets(&args)
+	err := argParse()
 	if err != nil {
 		panic(err)
 	}
-	// fmt.Println(&a.Objects)
-	for _, o := range a.Objects {
-		fmt.Println(o.FileNames[0])
+
+	var a *Assets
+	a, err = getAssets(&args)
+	if err != nil {
+		panic(err)
 	}
+
+	err = createCSV(a)
+	if err != nil {
+		panic(err)
+	}
+	
+	return nil
+}
+
+func createCSV(a *Assets) error {
+	var keySlice []string
+	var csvFile [][]string
+	
+	aDeref := reflect.ValueOf(*a.Objects[0])
+	for i := 0; i < aDeref.NumField(); i++ {
+		key := aDeref.Type().Field(i).Name
+		keySlice = append(keySlice, key)
+	}
+	csvFile = append(csvFile, keySlice)
+	
+	for _, o := range a.Objects {
+		var valuesLine []string
+		valuesLine = append(valuesLine, o.DateCreated, o.DateModified, o.FileNames[0], o.Files[0].OriginalName, o.Formats[0].Status, strconv.FormatFloat(float64(o.FrameRate), 'f', 2, 32), o.ID, o.InCollections[0], o.Keyframes[0].URL, (strconv.Itoa(o.OriginalResolution["width"]) + "x" + strconv.Itoa(o.OriginalResolution["height"])))
+		csvFile = append(csvFile, valuesLine)
+	}
+
+	// Create a new CSV writer
+	file, err := os.Create("output.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+
+	// Write the data to the CSV file
+	for _, row := range csvFile {
+		if err := writer.Write(row); err != nil {
+			panic(err)
+		}
+	}
+
+	// Flush the CSV writer to ensure any buffered data is written to the file
+	writer.Flush()
+
+	fmt.Println("CSV file created successfully")
 	return nil
 }
 
@@ -99,7 +149,7 @@ type Assets struct {
 
 type Object struct {
 	DateCreated        string         `json:"date_created"`
-	DataModified       string         `json:"date_modified"`
+	DateModified       string         `json:"date_modified"`
 	FileNames          []string       `json:"file_names"`
 	Files              []*File        `json:"files"`
 	Formats            []*Format      `json:"formats"`
