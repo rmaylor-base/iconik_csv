@@ -1,4 +1,4 @@
-package cmd
+package assets
 
 type Assets struct {
 	Objects []*Object `json:"objects"`
@@ -6,7 +6,7 @@ type Assets struct {
 
 type Object struct {
 	DateCreated        string         `json:"date_created"`
-	DataModified       string         `json:"date_modified"`
+	DateModified       string         `json:"date_modified"`
 	FileNames          []string       `json:"file_names"`
 	Files              []*File        `json:"files"`
 	Formats            []*Format      `json:"formats"`
